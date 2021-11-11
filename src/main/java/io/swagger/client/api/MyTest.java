@@ -26,30 +26,30 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.amazon.SellingPartnerAPIAA.AWSAuthenticationCredentials;
+import com.amazon.SellingPartnerAPIAA.AWSAuthenticationCredentialsProvider;
 import com.amazon.SellingPartnerAPIAA.LWAAuthorizationCredentials;
 import com.amazon.SellingPartnerAPIAA.LWAAuthorizationSigner;
 import com.amazon.SellingPartnerAPIAA.LWAAuthorizationCredentials.LWAAuthorizationCredentialsBuilder;
 import com.amazon.SellingPartnerAPIAA.AWSSigV4Signer;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+//import java.io.File;
+//import java.io.FileOutputStream;
+//import java.io.FileWriter;
+//import java.io.OutputStream;
+//import java.io.OutputStreamWriter;
+//import java.io.Writer;
 
-import java.io.BufferedWriter;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+//import java.io.BufferedWriter;
+//import java.nio.file.FileSystems;
+//import java.nio.file.Path;
+//import java.nio.file.Paths;
+//import java.time.ZoneOffset;
+//import java.time.ZonedDateTime;
+//import java.time.format.DateTimeFormatter;
 
-public class MyTest {
-  
-  //public void service(HttpRequest request, HttpResponse httpresponse) throws Exception {
+public class MyTest {  
 
    public static void main(String[] args) {
 
@@ -68,12 +68,22 @@ public class MyTest {
         .secretKey("XXXXXXXXXXXXXXXXXXXXXXXXXXXX")
         .region("us-east-1")
         .build();   
-            
-        LWAAuthorizationSigner  lwaAuthorizationSigner = new LWAAuthorizationSigner(lwaAuthorizationCredentials);
-        AWSSigV4Signer  awsAuthorizationSigner = new AWSSigV4Signer(awsAuthenticationCredentials);
+
+
+        UUID uuid = UUID.randomUUID();
+        AWSAuthenticationCredentialsProvider awsAuthenticationCredentialsProvider=AWSAuthenticationCredentialsProvider.builder()
+          .roleArn("myroleARN")
+          .roleSessionName(uuid.toString())
+          .build();
+ 
+        LWAAuthorizationSigner  lwaAuthorizationSigner = new LWAAuthorizationSigner(lwaAuthorizationCredentials);        
+        AWSSigV4Signer  awsAuthorizationSigner = new AWSSigV4Signer(awsAuthenticationCredentials, awsAuthenticationCredentialsProvider);
+
+
         ApiClient client = new ApiClient();
         client.setLWAAuthorizationSigner(lwaAuthorizationSigner);
         client.setAWSSigV4Signer(awsAuthorizationSigner);
+        
 
         ReportsApi api = new ReportsApi(client);
         List<String> reportTypes = new ArrayList<String>();            
@@ -88,6 +98,7 @@ public class MyTest {
         String nextToken = null;
         
         System.out.println("Fetching reports...");
+        
         GetReportsResponse response = api.getReports(reportTypes, processingStatuses, marketplaceIds, pageSize, createdSince, createdUntil, nextToken);
         System.out.println(response.toString());
 
