@@ -1,6 +1,10 @@
 package io.swagger.client.api;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.model.CreateReportResponse;
@@ -8,6 +12,7 @@ import io.swagger.client.model.CreateReportScheduleResponse;
 import io.swagger.client.model.CreateReportScheduleSpecification;
 import io.swagger.client.model.CreateReportSpecification;
 import io.swagger.client.model.ErrorList;
+import io.swagger.client.model.GetReportDocumentResponse;
 import io.swagger.client.model.GetReportsResponse;
 
 import org.apache.commons.io.output.WriterOutputStream;
@@ -34,20 +39,6 @@ import com.amazon.SellingPartnerAPIAA.LWAAuthorizationCredentials;
 import com.amazon.SellingPartnerAPIAA.LWAAuthorizationSigner;
 import com.amazon.SellingPartnerAPIAA.LWAAuthorizationCredentials.LWAAuthorizationCredentialsBuilder;
 import com.amazon.SellingPartnerAPIAA.AWSSigV4Signer;
-//import java.io.File;
-//import java.io.FileOutputStream;
-//import java.io.FileWriter;
-//import java.io.OutputStream;
-//import java.io.OutputStreamWriter;
-//import java.io.Writer;
-
-//import java.io.BufferedWriter;
-//import java.nio.file.FileSystems;
-//import java.nio.file.Path;
-//import java.nio.file.Paths;
-//import java.time.ZoneOffset;
-//import java.time.ZonedDateTime;
-//import java.time.format.DateTimeFormatter;
 
 public class MyTest {  
 
@@ -100,7 +91,36 @@ public class MyTest {
         System.out.println("Fetching reports...");
         
         GetReportsResponse response = api.getReports(reportTypes, processingStatuses, marketplaceIds, pageSize, createdSince, createdUntil, nextToken);
-        System.out.println(response.toString());
+       
+        String documentId = "";
+         
+        if (response.getReports().size() > 0) {
+          for (Report l : response.getReports()) {
+            if (l.getProcessingStatus() == ProcessingStatusEnum.DONE) {              
+              documentId = l.getReportDocumentId();
+              System.out.println("No report found");  
+            }
+          }
+        } else {
+          System.out.println("No report found");     
+          return;     
+        }
+
+        ReportDocument doc = api.getReportDocument(documentId);
+        File file = new File("tmp_report.txt");
+        if (!file.exists()) {
+            file.createNewFile();
+        }   
+        FileWriter fw = new FileWriter(file);              
+
+        BufferedWriter writer = new BufferedWriter(fw);
+        DownloadReport d = new DownloadReport();
+        if (doc.getCompressionAlgorithm() == null ) {            
+            d.download(doc.getUrl(), writer);  
+        } 
+        writer.flush();
+        writer.close();
+        
 
         
         } catch(Exception x ) {        
