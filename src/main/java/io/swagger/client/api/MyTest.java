@@ -3,7 +3,12 @@ package io.swagger.client.api;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
+
+import java.io.InputStream;
+import java.util.Properties;
 
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
@@ -46,42 +51,45 @@ public class MyTest {
 
 	 try
       {
+        Properties prop = new Properties();        
+        String projdir = System.getProperty("user.dir");
+        String propFileName = projdir+"\\config\\"+"config.properties";        
+        prop.load(new FileInputStream(propFileName));        
 
         LWAAuthorizationCredentials lwaAuthorizationCredentials = LWAAuthorizationCredentials.builder()
-        .clientId("amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxxxxxxx")
-        .clientSecret("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-        .refreshToken("Atzr|xxxxxxxxxxxxxxxxxxxxxxxx")
-        .endpoint("https://api.amazon.com/auth/o2/token")
+        .clientId(prop.getProperty("clientId"))
+        .clientSecret(prop.getProperty("clientSecret"))
+        .refreshToken(prop.getProperty("refreshToken"))
+        .endpoint(prop.getProperty("endpoint"))
         .build();
 
         AWSAuthenticationCredentials awsAuthenticationCredentials = AWSAuthenticationCredentials.builder()
-        .accessKeyId("AKIAXXXXXXXXXXXXXXXXXX")
-        .secretKey("XXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-        .region("us-east-1")
-        .build();   
-
+        .accessKeyId(prop.getProperty("accessKeyId"))
+        .secretKey(prop.getProperty("secretKey"))
+        .region(prop.getProperty("region"))
+        .build();
 
         UUID uuid = UUID.randomUUID();
         AWSAuthenticationCredentialsProvider awsAuthenticationCredentialsProvider=AWSAuthenticationCredentialsProvider.builder()
-          .roleArn("myroleARN")
+          .roleArn(prop.getProperty("roleArn"))
           .roleSessionName(uuid.toString())
           .build();
- 
-        LWAAuthorizationSigner  lwaAuthorizationSigner = new LWAAuthorizationSigner(lwaAuthorizationCredentials);        
+        
+        LWAAuthorizationSigner  lwaAuthorizationSigner = new LWAAuthorizationSigner(lwaAuthorizationCredentials);                       
         AWSSigV4Signer  awsAuthorizationSigner = new AWSSigV4Signer(awsAuthenticationCredentials, awsAuthenticationCredentialsProvider);
+
 
 
         ApiClient client = new ApiClient();
         client.setLWAAuthorizationSigner(lwaAuthorizationSigner);
-        client.setAWSSigV4Signer(awsAuthorizationSigner);
-        
+        client.setAWSSigV4Signer(awsAuthorizationSigner);        
 
         ReportsApi api = new ReportsApi(client);
         List<String> reportTypes = new ArrayList<String>();            
         reportTypes.add("GET_FBA_MYI_UNSUPPRESSED_INVENTORY_DATA");        
         
         List<String> processingStatuses = null;
-        List<String> marketplaceIds = Arrays.asList("ATVPDKIKX0DER");
+        List<String> marketplaceIds = Arrays.asList(prop.getProperty("marketplaceId")); 
         
         Integer pageSize = null;
         OffsetDateTime createdSince = null;
@@ -92,13 +100,15 @@ public class MyTest {
         
         GetReportsResponse response = api.getReports(reportTypes, processingStatuses, marketplaceIds, pageSize, createdSince, createdUntil, nextToken);
        
+        System.out.println(response.toString());
+
         String documentId = "";
          
         if (response.getReports().size() > 0) {
           for (Report l : response.getReports()) {
             if (l.getProcessingStatus() == ProcessingStatusEnum.DONE) {              
               documentId = l.getReportDocumentId();
-              System.out.println("No report found");  
+              break; //pick latest report  
             }
           }
         } else {
